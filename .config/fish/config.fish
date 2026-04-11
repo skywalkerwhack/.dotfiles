@@ -1,5 +1,7 @@
 # fish_config theme choose "Rosé Pine"
 
+# Export main ssh-agent to tmux sessions
+
 # aliases
 alias fastfetch='fastfetch -l arch'
 alias rm='rm -I'
@@ -14,6 +16,8 @@ alias ls='lsd -l'
 alias find='fd'
 alias tree='tree -C'
 alias dotfiles='/usr/bin/git --git-dir="$HOME/.dotfiles/" --work-tree="$HOME"'
+alias archrolling='sudo pacman -Syu'
+alias config_fish='vim ~/.config/fish/config.fish'
 
 # ENV
 set -x PATH $HOME/go/bin $PATH
@@ -25,6 +29,8 @@ set -x https_proxy 'http://127.0.0.1:10808'
 set -x HTTP_PROXY 'http://127.0.0.1:10808'
 set -x HTTPS_PROXY 'http://127.0.0.1:10808'
 #set -x TERM xterm-256color
+set -x GEM_HOME (gem env user_gemhome)
+set -x PATH $GEM_HOME/bin $PATH
 
 function hiscal
     history | awk '{print $1}' | sort | uniq --count | sort --numeric-sort --reverse | head -10
@@ -88,10 +94,14 @@ function n
     end
 end
 
-# Fortune for you
-fortune
-echo ""
+# Only print things in interactive shells
+if status is-interactive
+	# Fortune for you
+	fortune
+	echo ""
 
+	echo -ne "\e[5 q"
+end
 thefuck --alias | source
 starship init fish | source
 zoxide init --cmd cd fish | source

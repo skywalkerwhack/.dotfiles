@@ -94,13 +94,31 @@ function n
     end
 end
 
+function litterbox
+    # Usage: upload_file <file> [time]
+    if test (count $argv) -eq 0
+        echo "Usage: upload_file <file> [time]"
+        return 1
+    end
+
+    set file $argv[1]
+
+    if test (count $argv) -ge 2
+        set time $argv[2]
+    else
+        set time 1h
+    end
+
+    curl -F "reqtype=fileupload" -F "time=$time" -F "fileToUpload=@$file" https://litterbox.catbox.moe/resources/internals/api.php
+end
+
 # Only print things in interactive shells
 if status is-interactive
-	# Fortune for you
-	fortune
-	echo ""
+    # Fortune for you
+    fortune
+    echo ""
 
-	echo -ne "\e[5 q"
+    echo -ne "\e[5 q"
 end
 thefuck --alias | source
 starship init fish | source

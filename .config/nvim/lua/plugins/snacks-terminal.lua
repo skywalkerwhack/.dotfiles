@@ -3,6 +3,7 @@ if true then
     "folke/snacks.nvim",
     opts = {
       terminal = {
+        shell = "fish",
         -- This defines the window properties for the terminal
         win = {
           style = "float", -- Ensure it is a floating window

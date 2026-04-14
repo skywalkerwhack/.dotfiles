@@ -5,3 +5,11 @@
 	name = bart_dude
 [init]
 	defaultBranch = main
+
+# Some notes on a classic github workflow
+# git checkout -b feature-x;
+# Do some commits.
+# git pull --rebase origin main;
+# git push -f;
+# gh pr create;
+# gh pr merge --squash --delete-branch;

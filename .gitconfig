@@ -1,0 +1,7 @@
+[http]
+	proxy = http://127.0.0.1:10808
+[user]
+	email = jok7pifxt@mozmail.com
+	name = bart_dude
+[init]
+	defaultBranch = main

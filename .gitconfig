@@ -1,11 +1,16 @@
 [http]
 	proxy = http://127.0.0.1:10808
 [user]
-	email = jok7pifxt@mozmail.com
+	email = kanye@seek.li
 	name = bart_dude
 [init]
 	defaultBranch = main
 
+[sendemail]
+	smtpserver = mail.seek.li
+	smtpuser = kanye@seek.li
+	smtpencryption = ssl
+	smtpserverport = 465
 # Some notes on a classic github workflow
 # git checkout -b feature-x;
 # Do some commits.

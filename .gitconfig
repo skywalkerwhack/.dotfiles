@@ -18,3 +18,5 @@
 # git push -f;
 # gh pr create;
 # gh pr merge --squash --delete-branch;
+[alias]
+	graph = log --graph --oneline --decorate

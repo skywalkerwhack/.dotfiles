@@ -8,13 +8,16 @@ alias rm='rm -I'
 alias cp='cp -i'
 alias mv='mv -i'
 alias vi='nvim'
-alias cat='bat --paging=never'
-alias less='bat --paging=always'
-alias du='dust'
-alias df='duf'
-alias ls='lsd -l'
-alias find='fd'
-alias tree='tree -C'
+
+# These socalled modern unix softwares are sometimes useful but mostly anoying.
+# :(
+# alias cat='bat --paging=never'
+# alias less='bat --paging=always'
+# alias du='dust'
+# alias df='duf'
+# alias ls='lsd -l'
+# alias find='fd'
+# alias tree='tree -C' <- this one does not count
 alias dotfiles='/usr/bin/git --git-dir="$HOME/.dotfiles/" --work-tree="$HOME"'
 alias archrolling='sudo pacman -Syu'
 alias config_fish='vim ~/.config/fish/config.fish'

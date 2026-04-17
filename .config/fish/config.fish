@@ -21,6 +21,7 @@ alias archrolling='sudo pacman -Syu'
 alias config_fish='vim ~/.config/fish/config.fish'
 
 # SOME ENVS
+set -x PATH $HOME/.local/bin $PATH
 set -x PATH $HOME/go/bin $PATH
 set -x PATH $HOME/.cargo/bin $PATH
 set -x PATH $HOME/.local/share/nvim/mason/bin/ $PATH

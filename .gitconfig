@@ -20,3 +20,8 @@
 # gh pr merge --squash --delete-branch;
 [alias]
 	graph = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
+	hotfiles = !git log --format=format: --name-only --since='1 year ago' | sort | uniq -c | sort -nr | head -20
+	authors = shortlog -sen --no-merges
+	bugfiles = !git log -i -E --grep='fix|bug|broken' --name-only --format='' | sort | uniq -c | sort -nr | head -20
+	monthly = !git log --format='%ad' --date=format:'%Y-%m' | sort | uniq -c
+	incidents = !git log --oneline --since='1 year ago' | grep -iE 'revert|hotfix|emergency|rollback'

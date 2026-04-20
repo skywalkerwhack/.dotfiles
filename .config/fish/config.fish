@@ -19,6 +19,7 @@ alias vi='nvim'
 alias dotfiles='/usr/bin/git --git-dir="$HOME/.dotfiles/" --work-tree="$HOME"'
 alias archrolling='sudo pacman -Syu'
 alias config_fish='vim ~/.config/fish/config.fish'
+alias virenv='source ~/projects/py/virenv/bin/activate.fish'
 
 # SOME ENVS
 set -x PATH $HOME/.local/bin $PATH
@@ -100,6 +101,27 @@ function litterbox
         set time 1h
     end
     curl -F "reqtype=fileupload" -F "time=$time" -F "fileToUpload=@$file" https://litterbox.catbox.moe/resources/internals/api.php
+end
+function gcm
+    # Choose commit type
+    set TYPE (gum choose fix feat docs style refactor test chore revert)
+
+    # Get optional scope
+    set SCOPE (gum input --placeholder "scope")
+
+    # Wrap scope in parentheses if not empty
+    if test -n "$SCOPE"
+        set SCOPE "($SCOPE)"
+    end
+
+    # Build summary with prefilled value
+    set SUMMARY (gum input --value "$TYPE$SCOPE: " --placeholder "Summary of this change")
+
+    # Detailed description
+    set DESCRIPTION (gum write --placeholder "Details of this change")
+
+    # Confirm and commit
+    gum confirm "Commit changes?"; and git commit -m "$SUMMARY" -m "$DESCRIPTION"
 end
 
 # FORTUNE IN INTERACTIVE SHELLS

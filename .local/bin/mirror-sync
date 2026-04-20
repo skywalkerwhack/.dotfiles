@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# =========================
+# Args
+# =========================
+SOURCE_REMOTE="${1:-}"
+TARGET_REMOTE="${2:-}"
+
+if [[ -z "$SOURCE_REMOTE" || -z "$TARGET_REMOTE" ]]; then
+  echo "Usage: $0 <source-remote> <target-remote>"
+  exit 1
+fi
+
+# =========================
+# Temp repo (ephemeral)
+# =========================
+WORKDIR="$(mktemp -d)"
+echo "📦 Working directory: $WORKDIR"
+
+# =========================
+# Clone mirror into /tmp
+# =========================
+echo "🔄 Cloning mirror from $SOURCE_REMOTE ..."
+git clone --mirror "$SOURCE_REMOTE" "$WORKDIR/repo.git"
+
+cd "$WORKDIR/repo.git"
+
+# =========================
+# Push to target mirror
+# =========================
+echo "🚀 Pushing branches ..."
+git push --all "$TARGET_REMOTE"
+
+echo "🚀 Pushing tags ..."
+git push --tags "$TARGET_REMOTE"
+
+echo "✅ Done."
+
+# =========================
+# Cleanup (optional but recommended)
+# =========================
+cd /
+rm -rf "$WORKDIR"
+
+echo "🧹 Cleaned up /tmp workspace"

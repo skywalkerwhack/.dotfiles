@@ -1,0 +1,25 @@
+#!/usr/bin/env zsh
+
+COMMIT_MESSAGE='Initial commit'
+
+if [[ "$1" == "-m" ]]; then
+    COMMIT_MESSAGE="$2"
+    shift 2
+fi
+
+
+gitdirexists() {
+    if [[ -d ".git" ]]; then
+        echo ".git directory already exists, aborting"
+        exit 1
+    fi
+}
+
+dir="${*:-.}"
+
+mkdir -p "$dir" \
+  && cd "$dir" \
+  && gitdirexists \
+  && git init \
+  && git add . \
+  && git commit --allow-empty -m "$COMMIT_MESSAGE"

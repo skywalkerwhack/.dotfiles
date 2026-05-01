@@ -18,8 +18,10 @@ alias vi='nvim'
 # alias tree='tree -C' <- this one does not count
 alias dotfiles='/usr/bin/git --git-dir="$HOME/.dotfiles/" --work-tree="$HOME"'
 alias archrolling='sudo pacman -Syu'
+alias top10pkg="expac '%m\t%n' | sort -rn | head -10 | numfmt --to=iec-i --suffix=B --format='%.1f' --field=1 | column -t"
 alias config_fish='vim ~/.config/fish/config.fish'
 alias virenv='source ~/projects/py/virenv/bin/activate.fish'
+alias run-iso='qemu-system-x86_64 -m 2G -cdrom -nographic'
 
 # SOME ENVS
 set -x PATH $HOME/.local/bin $PATH

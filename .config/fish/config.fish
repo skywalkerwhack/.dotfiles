@@ -22,6 +22,7 @@ alias top10pkg="expac '%m\t%n' | sort -rn | head -10 | numfmt --to=iec-i --suffi
 alias config_fish='vim ~/.config/fish/config.fish'
 alias virenv='source ~/projects/py/virenv/bin/activate.fish'
 alias run-iso='qemu-system-x86_64 -m 2G -cdrom -nographic'
+alias ncdu-root='sudo ncdu --exclude /proc --exclude /sys --exclude /dev /'
 
 # SOME ENVS
 set -x PATH $HOME/.local/bin $PATH

@@ -11,7 +11,7 @@
 	smtpuser = kanye@seek.li
 	smtpencryption = ssl
 	smtpserverport = 465
-# Some notes on a classic github workflow
+# Some notes on a typical github workflow
 # git checkout -b feature-x;
 # Do some commits.
 # git pull --rebase origin main;

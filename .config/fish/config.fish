@@ -43,12 +43,157 @@ set -x PATH $GEM_HOME/bin $PATH
 function hiscal
     history | awk '{print $1}' | sort | uniq --count | sort --numeric-sort --reverse | head -10
 end
+
 function sy
     syncthing >/dev/null &
 end
+
 function c_project
     mkdir -p {src,include,build,bin,tests} && touch src/main.c include/.gitkeep README.md Makefile
 end
+
+function backup
+    if test (id -u) -eq 0
+        echo "Please run as a non-root user"
+        return 1
+    end
+
+    if rclone lsf "r2:backup/" >/dev/null 2>&1
+        echo "Remote is reachable. Starting backup."
+    else
+        echo "Remote is not reachable."
+        return 1
+    end
+
+    set -l backup_arch_dir "$HOME/sync/BACKUP/archlinux"
+
+    mkdir -p \
+        "$backup_arch_dir/rclone" \
+        "$backup_arch_dir/dot_ssh"
+
+    cp -a "$HOME/.config/rclone/rclone.conf" "$backup_arch_dir/rclone/"
+    cp -a "$HOME/.ssh" "$backup_arch_dir/dot_ssh/"
+
+    pacman -Qqe >"$backup_arch_dir/pkglist.txt"
+
+    set -l archive_name "backup_"(date +%Y%m%d_%H%M%S)".tar.gz.gpg"
+
+    echo "Streaming backup to r2..."
+
+    tar -C "$HOME/sync" -czf - BACKUP \
+        | gpg --batch --yes \
+        --passphrase-file "$HOME/.gpg-passphrase" \
+        --no-symkey-cache \
+        --symmetric \
+        --output - \
+        | rclone rcat "r2:backup/$archive_name"
+
+    or return 1
+
+    echo "Backup finished."
+end
+
+function mirror-sync
+    if test (count $argv) -lt 2
+        echo "Usage: mirror-sync <source-remote> <target-remote>"
+        return 1
+    end
+
+    set -l source_remote $argv[1]
+    set -l target_remote $argv[2]
+
+    # =========================
+    # Temp repo (ephemeral)
+    # =========================
+    set -l workdir (mktemp -d)
+
+    if test -z "$workdir"
+        echo "Failed to create temp directory"
+        return 1
+    end
+
+    echo "📦 Working directory: $workdir"
+
+    # Cleanup on exit
+    function __mirror_sync_cleanup --on-event fish_exit
+        if test -d "$workdir"
+            rm -rf "$workdir"
+            echo "🧹 Cleaned up /tmp workspace"
+        end
+    end
+
+    # =========================
+    # Clone mirror into /tmp
+    # =========================
+    echo "🔄 Cloning mirror from $source_remote ..."
+
+    git clone --mirror "$source_remote" "$workdir/repo.git"
+    or return 1
+
+    cd "$workdir/repo.git"
+    or return 1
+
+    # =========================
+    # Push to target mirror
+    # =========================
+    echo "🚀 Pushing branches ..."
+    git push --all "$target_remote"
+    or return 1
+
+    echo "🚀 Pushing tags ..."
+    git push --tags "$target_remote"
+    or return 1
+
+    echo "✅ Done."
+end
+
+function git-setup
+    set -l commit_message "Initial commit"
+
+    if test (count $argv) -ge 2
+        if test "$argv[1]" = -m
+            set commit_message "$argv[2]"
+            set -e argv[1..2]
+        end
+    end
+
+    set -l dir "."
+
+    if test (count $argv) -gt 0
+        set dir $argv
+    end
+
+    mkdir -p "$dir"; and cd "$dir"
+
+    if test -d .git
+        echo ".git directory already exists, aborting"
+        return 1
+    end
+
+    git init \
+        && git add . \
+        && git commit --allow-empty -m "$commit_message"
+end
+
+function git-tmp --description "Clone a git repo into a temporary directory"
+    set dir (mktemp -d)
+
+    if not test -d "$dir"
+        echo "Failed to create temp directory"
+        return 1
+    end
+
+    git clone --depth=1 $argv[1] "$dir"
+    or begin
+        rm -rf "$dir"
+        return 1
+    end
+
+    cd "$dir"
+
+    echo "Cloned into: $dir"
+end
+
 function man
     set -lx LESS_TERMCAP_mb (tput bold; tput setaf 2) # green
     set -lx LESS_TERMCAP_md (tput bold; tput setaf 6) # cyan

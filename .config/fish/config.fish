@@ -23,6 +23,7 @@ alias config_fish='vim ~/.config/fish/config.fish'
 alias virenv='source ~/projects/py/virenv/bin/activate.fish'
 alias run-iso='qemu-system-x86_64 -m 2G -cdrom -nographic'
 alias ncdu-root='sudo ncdu --exclude /proc --exclude /sys --exclude /dev /'
+alias gpush='git add . && git commit -m "update $(date +%F_%T)"&& git push origin main'
 alias gship='gh pr create && gh pr merge --squash --delete-branch && git fetch --prune && git pull --tags'
 
 # SOME ENVS

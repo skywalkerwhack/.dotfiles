@@ -1,11 +1,17 @@
 # fish_config theme choose "Rosé Pine"
 
-# ALIASES
-alias fastfetch='fastfetch -l arch'
-alias rm='rm -I'
-alias cp='cp -i'
-alias mv='mv -i'
-alias vi='nvim'
+# COMMAND WRAPPERS
+function rm
+    command rm -I $argv
+end
+
+function cp
+    command cp -i $argv
+end
+
+function mv
+    command mv -i $argv
+end
 
 # THESE SOCALLED MODERN UNIX SOFTWARES ARE SOMETIMES USEFUL BUT MOSTLY ANOYING.
 # :(
@@ -16,15 +22,64 @@ alias vi='nvim'
 # alias ls='lsd -l'
 # alias find='fd'
 # alias tree='tree -C' <- this one does not count
-alias dotfiles='/usr/bin/git --git-dir="$HOME/.dotfiles/" --work-tree="$HOME"'
-alias archrolling='sudo pacman -Syu'
-alias top10pkg="expac '%m\t%n' | sort -rn | head -10 | numfmt --to=iec-i --suffix=B --format='%.1f' --field=1 | column -t"
-alias config_fish='vim ~/.config/fish/config.fish'
-alias virenv='source ~/projects/py/virenv/bin/activate.fish'
-alias run-iso='qemu-system-x86_64 -m 2G -cdrom -nographic'
-alias ncdu-root='sudo ncdu --exclude /proc --exclude /sys --exclude /dev /'
-alias gpush='git add . && git commit -m "update $(date +%F_%T)"&& git push origin main'
-alias gship='gh pr create && gh pr merge --squash --delete-branch && git fetch --prune && git pull --tags'
+function dotfiles
+    /usr/bin/git --git-dir="$HOME/.dotfiles/" --work-tree="$HOME" $argv
+end
+
+function arch-upgrade
+    sudo pacman -Syu $argv
+end
+
+function list-top-10-installed-packages-by-size
+    expac '%m\t%n' | sort -rn | head -10 | numfmt --to=iec-i --suffix=B --format='%.1f' --field=1 | column -t
+end
+
+function top-10-packages
+    list-top-10-installed-packages-by-size $argv
+end
+
+function edit-fish-config
+    vim ~/.config/fish/config.fish
+end
+
+function activate-python-virtualenv
+    source ~/projects/py/virenv/bin/activate.fish
+end
+
+function activate-virenv
+    activate-python-virtualenv $argv
+end
+
+function boot-iso
+    qemu-system-x86_64 -m 2G -cdrom $argv[1] -nographic $argv[2..-1]
+end
+
+function ncdu-root
+    sudo ncdu --exclude /proc --exclude /sys --exclude /dev / $argv
+end
+
+function git-auto-push-main
+    set -l timestamp (date +%F_%T)
+
+    git add .
+    and git commit -m "update $timestamp"
+    and git push origin main
+end
+
+function ship-pr
+    gh pr create $argv
+    and gh pr merge --squash --delete-branch
+    and git fetch --prune
+    and git pull --tags
+end
+
+function list-ssh-client-ip-addresses
+    journalctl -u sshd | grep -oP 'from \K[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' | sort -u
+end
+
+function ssh-source-ips
+    list-ssh-client-ip-addresses $argv
+end
 
 # SOME ENVS
 set -x PATH $HOME/.local/bin $PATH
@@ -41,19 +96,23 @@ set -x GEM_HOME (gem env user_gemhome)
 set -x PATH $GEM_HOME/bin $PATH
 
 # SOME FUNCTIONS
-function hiscal
+function show-command-history-frequency
     history | awk '{print $1}' | sort | uniq --count | sort --numeric-sort --reverse | head -10
 end
 
-function sy
+function hiscal
+    show-command-history-frequency $argv
+end
+
+function start-syncthing
     syncthing >/dev/null &
 end
 
-function c_project
+function create-c-project
     mkdir -p {src,include,build,bin,tests} && touch src/main.c include/.gitkeep README.md Makefile
 end
 
-function backup
+function backup-sync-directory-to-r2
     if test (id -u) -eq 0
         echo "Please run as a non-root user"
         return 1
@@ -66,18 +125,18 @@ function backup
         return 1
     end
 
-    set -l backup_arch_dir "$HOME/sync/BACKUP/archlinux"
+    set -l backup_archive_directory "$HOME/sync/BACKUP/archlinux"
 
     mkdir -p \
-        "$backup_arch_dir/rclone" \
-        "$backup_arch_dir/dot_ssh"
+        "$backup_archive_directory/rclone" \
+        "$backup_archive_directory/dot_ssh"
 
-    cp -a "$HOME/.config/rclone/rclone.conf" "$backup_arch_dir/rclone/"
-    cp -a "$HOME/.ssh" "$backup_arch_dir/dot_ssh/"
+    cp -a "$HOME/.config/rclone/rclone.conf" "$backup_archive_directory/rclone/"
+    cp -a "$HOME/.ssh" "$backup_archive_directory/dot_ssh/"
 
-    pacman -Qqe >"$backup_arch_dir/pkglist.txt"
+    pacman -Qqe >"$backup_archive_directory/pkglist.txt"
 
-    set -l archive_name "backup_"(date +%Y%m%d_%H%M%S)".tar.gz.gpg"
+    set -l encrypted_archive_filename "backup_"(date +%Y%m%d_%H%M%S)".tar.gz.gpg"
 
     echo "Streaming backup to r2..."
 
@@ -87,11 +146,15 @@ function backup
         --no-symkey-cache \
         --symmetric \
         --output - \
-        | rclone rcat "r2:backup/$archive_name"
+        | rclone rcat "r2:backup/$encrypted_archive_filename"
 
     or return 1
 
     echo "Backup finished."
+end
+
+function backup
+    backup-sync-directory-to-r2 $argv
 end
 
 function mirror-sync
@@ -106,19 +169,19 @@ function mirror-sync
     # =========================
     # Temp repo (ephemeral)
     # =========================
-    set -l workdir (mktemp -d)
+    set -l temporary_repo_directory (mktemp -d)
 
-    if test -z "$workdir"
+    if test -z "$temporary_repo_directory"
         echo "Failed to create temp directory"
         return 1
     end
 
-    echo "📦 Working directory: $workdir"
+    echo "📦 Working directory: $temporary_repo_directory"
 
     # Cleanup on exit
     function __mirror_sync_cleanup --on-event fish_exit
-        if test -d "$workdir"
-            rm -rf "$workdir"
+        if test -d "$temporary_repo_directory"
+            rm -rf "$temporary_repo_directory"
             echo "🧹 Cleaned up /tmp workspace"
         end
     end
@@ -128,10 +191,10 @@ function mirror-sync
     # =========================
     echo "🔄 Cloning mirror from $source_remote ..."
 
-    git clone --mirror "$source_remote" "$workdir/repo.git"
+    git clone --mirror "$source_remote" "$temporary_repo_directory/repo.git"
     or return 1
 
-    cd "$workdir/repo.git"
+    cd "$temporary_repo_directory/repo.git"
     or return 1
 
     # =========================
@@ -158,13 +221,13 @@ function git-setup
         end
     end
 
-    set -l dir "."
+    set -l target_directory "."
 
     if test (count $argv) -gt 0
-        set dir $argv
+        set target_directory $argv
     end
 
-    mkdir -p "$dir"; and cd "$dir"
+    mkdir -p "$target_directory"; and cd "$target_directory"
 
     if test -d .git
         echo ".git directory already exists, aborting"
@@ -176,23 +239,27 @@ function git-setup
         && git commit --allow-empty -m "$commit_message"
 end
 
-function git-tmp --description "Clone a git repo into a temporary directory"
-    set dir (mktemp -d)
+function git-clone-to-temp-dir --description "Clone a git repo into a temporary directory"
+    set temporary_clone_directory (mktemp -d)
 
-    if not test -d "$dir"
+    if not test -d "$temporary_clone_directory"
         echo "Failed to create temp directory"
         return 1
     end
 
-    git clone --depth=1 $argv[1] "$dir"
+    git clone --depth=1 $argv[1] "$temporary_clone_directory"
     or begin
-        rm -rf "$dir"
+        rm -rf "$temporary_clone_directory"
         return 1
     end
 
-    cd "$dir"
+    cd "$temporary_clone_directory"
 
-    echo "Cloned into: $dir"
+    echo "Cloned into: $temporary_clone_directory"
+end
+
+function git-tmp
+    git-clone-to-temp-dir $argv
 end
 
 function man
@@ -244,34 +311,34 @@ function litterbox
         echo "Usage: upload_file <file> [time]"
         return 1
     end
-    set file $argv[1]
+    set upload_file_path $argv[1]
     if test (count $argv) -ge 2
-        set time $argv[2]
+        set upload_expiration $argv[2]
     else
-        set time 1h
+        set upload_expiration 1h
     end
-    curl -F "reqtype=fileupload" -F "time=$time" -F "fileToUpload=@$file" https://litterbox.catbox.moe/resources/internals/api.php
+    curl -F "reqtype=fileupload" -F "time=$upload_expiration" -F "fileToUpload=@$upload_file_path" https://litterbox.catbox.moe/resources/internals/api.php
 end
-function gcm
+function git-conventional-commit
     # Choose commit type
-    set TYPE (gum choose fix feat docs style refactor test chore revert)
+    set commit_type (gum choose fix feat docs style refactor test chore revert)
 
     # Get optional scope
-    set SCOPE (gum input --placeholder "scope")
+    set commit_scope (gum input --placeholder "scope")
 
     # Wrap scope in parentheses if not empty
-    if test -n "$SCOPE"
-        set SCOPE "($SCOPE)"
+    if test -n "$commit_scope"
+        set commit_scope "($commit_scope)"
     end
 
     # Build summary with prefilled value
-    set SUMMARY (gum input --value "$TYPE$SCOPE: " --placeholder "Summary of this change")
+    set commit_summary (gum input --value "$commit_type$commit_scope: " --placeholder "Summary of this change")
 
     # Detailed description
-    set DESCRIPTION (gum write --placeholder "Details of this change")
+    set commit_description (gum write --placeholder "Details of this change")
 
     # Confirm and commit
-    gum confirm "Commit changes?"; and git commit -m "$SUMMARY" -m "$DESCRIPTION"
+    gum confirm "Commit changes?"; and git commit -m "$commit_summary" -m "$commit_description"
 end
 
 # FORTUNE IN INTERACTIVE SHELLS

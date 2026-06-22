@@ -94,6 +94,7 @@ set -x HTTPS_PROXY 'http://127.0.0.1:10808'
 # set -x TERM xterm-256color
 set -x GEM_HOME (gem env user_gemhome)
 set -x PATH $GEM_HOME/bin $PATH
+set -x RUSTUP_DIST_SERVER https://mirrors.tuna.tsinghua.edu.cn/rustup
 
 # SOME FUNCTIONS
 function show-command-history-frequency

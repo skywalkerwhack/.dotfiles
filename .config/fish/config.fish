@@ -166,50 +166,51 @@ function mirror-sync
 
     set -l source_remote $argv[1]
     set -l target_remote $argv[2]
-
-    # =========================
-    # Temp repo (ephemeral)
-    # =========================
     set -l temporary_repo_directory (mktemp -d)
-
-    if test -z "$temporary_repo_directory"
-        echo "Failed to create temp directory"
-        return 1
-    end
+    or return 1
 
     echo "📦 Working directory: $temporary_repo_directory"
 
-    # Cleanup on exit
-    function __mirror_sync_cleanup --on-event fish_exit
-        if test -d "$temporary_repo_directory"
-            rm -rf "$temporary_repo_directory"
-            echo "🧹 Cleaned up /tmp workspace"
+    # =========================
+    # Main logic with guaranteed cleanup
+    # =========================
+    begin
+        # Clone mirror
+        echo "🔄 Cloning mirror from $source_remote ..."
+        git clone --mirror "$source_remote" "$temporary_repo_directory/repo.git"
+        or begin
+            echo "❌ Clone failed"
+            return 1
+        end
+
+        cd "$temporary_repo_directory/repo.git"
+        or return 1
+
+        # Push to target
+        echo "🚀 Pushing to $target_remote ..."
+
+        # 使用 --mirror 是最适合镜像同步的方式
+        if git push --mirror "$target_remote"
+            echo "✅ Mirror sync completed successfully."
+        else
+            echo "⚠️  --mirror push failed, falling back to --all + --tags..."
+            git push --all "$target_remote"
+            and git push --tags "$target_remote"
+            or begin
+                echo "❌ Push failed"
+                return 1
+            end
+            echo "✅ Mirror sync completed (using fallback method)."
         end
     end
 
     # =========================
-    # Clone mirror into /tmp
+    # 同步完成后立即清理
     # =========================
-    echo "🔄 Cloning mirror from $source_remote ..."
-
-    git clone --mirror "$source_remote" "$temporary_repo_directory/repo.git"
-    or return 1
-
-    cd "$temporary_repo_directory/repo.git"
-    or return 1
-
-    # =========================
-    # Push to target mirror
-    # =========================
-    echo "🚀 Pushing branches ..."
-    git push --all "$target_remote"
-    or return 1
-
-    echo "🚀 Pushing tags ..."
-    git push --tags "$target_remote"
-    or return 1
-
-    echo "✅ Done."
+    echo "🧹 Cleaning up temporary files..."
+    rm -rf "$temporary_repo_directory"
+    and echo "✅ Workspace cleaned."
+    or echo "⚠️  Failed to clean temporary directory (manual removal may be needed)"
 end
 
 function git-setup

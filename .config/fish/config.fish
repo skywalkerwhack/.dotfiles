@@ -129,11 +129,9 @@ function backup-sync-directory-to-r2
     set -l backup_archive_directory "$HOME/sync/BACKUP/archlinux"
 
     mkdir -p \
-        "$backup_archive_directory/rclone" \
-        "$backup_archive_directory/dot_ssh"
+        "$backup_archive_directory/rclone"
 
     cp -a "$HOME/.config/rclone/rclone.conf" "$backup_archive_directory/rclone/"
-    cp -a "$HOME/.ssh" "$backup_archive_directory/dot_ssh/"
 
     pacman -Qqe >"$backup_archive_directory/pkglist.txt"
 

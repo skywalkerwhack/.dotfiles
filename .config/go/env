@@ -1,0 +1,2 @@
+GOCACHE=/tmp/go-build
+GOMODCACHE=/tmp/go-mod

@@ -201,6 +201,7 @@ function mirror-sync
             echo "✅ Mirror sync completed (using fallback method)."
         end
     end
+    cd $HOME
 
     # =========================
     # 同步完成后立即清理

@@ -13,80 +13,28 @@ function mv
     command mv -i $argv
 end
 
-# THESE SOCALLED MODERN UNIX SOFTWARES ARE SOMETIMES USEFUL BUT MOSTLY ANOYING.
-# :(
-# alias cat='bat --paging=never'
-# alias less='bat --paging=always'
-# alias du='dust'
-# alias df='duf'
-# alias ls='lsd -l'
-# alias find='fd'
-# alias tree='tree -C' <- this one does not count
 function dotfiles
     /usr/bin/git --git-dir="$HOME/.dotfiles/" --work-tree="$HOME" $argv
-end
-
-function arch-upgrade
-    sudo pacman -Syu $argv
 end
 
 function list-top-10-installed-packages-by-size
     expac '%m\t%n' | sort -rn | head -10 | numfmt --to=iec-i --suffix=B --format='%.1f' --field=1 | column -t
 end
 
-function top-10-packages
-    list-top-10-installed-packages-by-size $argv
-end
-
-function edit-fish-config
-    vim ~/.config/fish/config.fish
-end
-
-function activate-python-virtualenv
-    source ~/projects/py/virenv/bin/activate.fish
-end
-
-function activate-virenv
-    activate-python-virtualenv $argv
-end
-
-function boot-iso
-    qemu-system-x86_64 -m 2G -cdrom $argv[1] -nographic $argv[2..-1]
-end
-
 function ncdu-root
     sudo ncdu --exclude /proc --exclude /sys --exclude /dev / $argv
-end
-
-function git-auto-push-main
-    set -l timestamp (date +%F_%T)
-
-    git add .
-    and git commit -m "update $timestamp"
-    and git push origin main
-end
-
-function ship-pr
-    gh pr create $argv
-    and gh pr merge --squash --delete-branch
-    and git fetch --prune
-    and git pull --tags
 end
 
 function list-ssh-client-ip-addresses
     journalctl -u sshd | grep -oP 'from \K[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' | sort -u
 end
 
-function ssh-source-ips
-    list-ssh-client-ip-addresses $argv
-end
 
 # SOME ENVS
 set -x PATH $HOME/.local/bin $PATH
 set -x PATH $HOME/go/bin $PATH
 set -x PATH $HOME/.cargo/bin $PATH
-set -x PATH $HOME/.local/share/nvim/mason/bin/ $PATH
-# set -x PATH $HOME/.local/share/nvim/mason/bin $PATH
+set -x PATH $HOME/.local/share/nvim/mason/bin $PATH
 set -x http_proxy 'http://127.0.0.1:10808'
 set -x https_proxy 'http://127.0.0.1:10808'
 set -x HTTP_PROXY 'http://127.0.0.1:10808'
@@ -96,120 +44,8 @@ set -x GEM_HOME (gem env user_gemhome)
 set -x PATH $GEM_HOME/bin $PATH
 set -x RUSTUP_DIST_SERVER https://mirrors.tuna.tsinghua.edu.cn/rustup
 
-# SOME FUNCTIONS
-function show-command-history-frequency
-    history | awk '{print $1}' | sort | uniq --count | sort --numeric-sort --reverse | head -10
-end
-
-function hiscal
-    show-command-history-frequency $argv
-end
-
-function start-syncthing
-    syncthing >/dev/null &
-end
-
 function create-c-project
     mkdir -p {src,include,build,bin,tests} && touch src/main.c include/.gitkeep README.md Makefile
-end
-
-function backup-sync-directory-to-r2
-    if test (id -u) -eq 0
-        echo "Please run as a non-root user"
-        return 1
-    end
-
-    if rclone lsf "r2:backup/" >/dev/null 2>&1
-        echo "Remote is reachable. Starting backup."
-    else
-        echo "Remote is not reachable."
-        return 1
-    end
-
-    set -l backup_archive_directory "$HOME/sync/BACKUP/archlinux"
-
-    mkdir -p \
-        "$backup_archive_directory/rclone"
-
-    cp -a "$HOME/.config/rclone/rclone.conf" "$backup_archive_directory/rclone/"
-
-    pacman -Qqe >"$backup_archive_directory/pkglist.txt"
-
-    set -l encrypted_archive_filename "backup_"(date +%Y%m%d_%H%M%S)".tar.gz.gpg"
-
-    echo "Streaming backup to r2..."
-
-    tar -C "$HOME/sync" -czf - BACKUP \
-        | gpg --batch --yes \
-        --passphrase-file "$HOME/.gpg-passphrase" \
-        --no-symkey-cache \
-        --symmetric \
-        --output - \
-        | rclone rcat "r2:backup/$encrypted_archive_filename"
-
-    or return 1
-
-    echo "Backup finished."
-end
-
-function backup
-    backup-sync-directory-to-r2 $argv
-end
-
-function mirror-sync
-    if test (count $argv) -lt 2
-        echo "Usage: mirror-sync <source-remote> <target-remote>"
-        return 1
-    end
-
-    set -l source_remote $argv[1]
-    set -l target_remote $argv[2]
-    set -l temporary_repo_directory (mktemp -d)
-    or return 1
-
-    echo "📦 Working directory: $temporary_repo_directory"
-
-    # =========================
-    # Main logic with guaranteed cleanup
-    # =========================
-    begin
-        # Clone mirror
-        echo "🔄 Cloning mirror from $source_remote ..."
-        git clone --mirror "$source_remote" "$temporary_repo_directory/repo.git"
-        or begin
-            echo "❌ Clone failed"
-            return 1
-        end
-
-        cd "$temporary_repo_directory/repo.git"
-        or return 1
-
-        # Push to target
-        echo "🚀 Pushing to $target_remote ..."
-
-        # 使用 --mirror 是最适合镜像同步的方式
-        if git push --mirror "$target_remote"
-            echo "✅ Mirror sync completed successfully."
-        else
-            echo "⚠️  --mirror push failed, falling back to --all + --tags..."
-            git push --all "$target_remote"
-            and git push --tags "$target_remote"
-            or begin
-                echo "❌ Push failed"
-                return 1
-            end
-            echo "✅ Mirror sync completed (using fallback method)."
-        end
-    end
-    cd $HOME
-
-    # =========================
-    # 同步完成后立即清理
-    # =========================
-    echo "🧹 Cleaning up temporary files..."
-    rm -rf "$temporary_repo_directory"
-    and echo "✅ Workspace cleaned."
-    or echo "⚠️  Failed to clean temporary directory (manual removal may be needed)"
 end
 
 function git-setup
@@ -228,7 +64,8 @@ function git-setup
         set target_directory $argv
     end
 
-    mkdir -p "$target_directory"; and cd "$target_directory"
+    mkdir -p "$target_directory"; or return 1
+    cd "$target_directory"
 
     if test -d .git
         echo ".git directory already exists, aborting"
@@ -241,7 +78,7 @@ function git-setup
 end
 
 function git-clone-to-temp-dir --description "Clone a git repo into a temporary directory"
-    set temporary_clone_directory (mktemp -d)
+    set -l temporary_clone_directory (mktemp -d)
 
     if not test -d "$temporary_clone_directory"
         echo "Failed to create temp directory"
@@ -257,10 +94,6 @@ function git-clone-to-temp-dir --description "Clone a git repo into a temporary 
     cd "$temporary_clone_directory"
 
     echo "Cloned into: $temporary_clone_directory"
-end
-
-function git-tmp
-    git-clone-to-temp-dir $argv
 end
 
 function man
@@ -280,10 +113,11 @@ function man
     set -lx GROFF_NO_SGR 1 # For Konsole and Gnome-terminal
     command man $argv
 end
+
 function n
     # nnn cd on quit config
     # Block nesting of nnn in subshells
-    if test "(env NNNLVL | string split '=' | tail -1 | string trim)" -eq 0
+    if set --query NNNLVL
         echo "nnn is already running"
         return
     end
@@ -306,40 +140,19 @@ function n
         rm -f -- "$NNN_TMPFILE" >/dev/null
     end
 end
+
 function litterbox
     # Usage: upload_file <file> [time]
     if test (count $argv) -eq 0
         echo "Usage: upload_file <file> [time]"
         return 1
     end
-    set upload_file_path $argv[1]
+    set -l upload_file_path $argv[1]
+    set -l upload_expiration 1h
     if test (count $argv) -ge 2
         set upload_expiration $argv[2]
-    else
-        set upload_expiration 1h
     end
     curl -F "reqtype=fileupload" -F "time=$upload_expiration" -F "fileToUpload=@$upload_file_path" https://litterbox.catbox.moe/resources/internals/api.php
-end
-function git-conventional-commit
-    # Choose commit type
-    set commit_type (gum choose fix feat docs style refactor test chore revert)
-
-    # Get optional scope
-    set commit_scope (gum input --placeholder "scope")
-
-    # Wrap scope in parentheses if not empty
-    if test -n "$commit_scope"
-        set commit_scope "($commit_scope)"
-    end
-
-    # Build summary with prefilled value
-    set commit_summary (gum input --value "$commit_type$commit_scope: " --placeholder "Summary of this change")
-
-    # Detailed description
-    set commit_description (gum write --placeholder "Details of this change")
-
-    # Confirm and commit
-    gum confirm "Commit changes?"; and git commit -m "$commit_summary" -m "$commit_description"
 end
 
 # FORTUNE IN INTERACTIVE SHELLS

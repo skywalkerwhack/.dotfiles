@@ -1,0 +1,11 @@
+{
+	auto_https off
+}
+
+http://arch.internal:8080 {
+	bind tcp4/0.0.0.0
+	handle_path /G0DM0D3/* {
+		root * /home/sin/projects/ts/G0DM0D3
+		file_server
+	}
+}
